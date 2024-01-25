@@ -26,12 +26,6 @@ jobs:
       )
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - message: thing 1
-          - message: thing 2
-
     steps:
       - uses: actions/checkout@v4
-      - run: echo ${{ matrix.message }}
+      - run: echo 'hi'
