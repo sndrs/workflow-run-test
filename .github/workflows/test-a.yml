@@ -13,4 +13,5 @@ jobs:
   say-things-a:
     runs-on: ubuntu-latest
     steps:
-      - run: echo 'hi'
+      - name: Run A
+        run: echo 'hi'
