@@ -1,0 +1,15 @@
+# .github/workflows/workflow_A.yml
+name: Workflow A
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  run-workflow-A:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Workflow A
+        run: echo 'hi'
