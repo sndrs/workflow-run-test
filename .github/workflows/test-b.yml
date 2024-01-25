@@ -8,6 +8,10 @@ on:
     workflows: [Test A]
     types:
       - completed
+    branches:
+      - main
+  pull_request_target:
+    types: [labeled]
 
 # && github.event.workflow_run.event == 'pull_request'
 # && contains(github.event.workflow_run.pull_requests[0].labels.*.name, 'run_chromatic')
@@ -19,12 +23,50 @@ on:
 
 jobs:
   say-things-b:
-    if: |
+    if: >
       (
         github.event_name == 'workflow_run'
           && github.event.workflow_run.conclusion == 'success'
+          && github.event.workflow_run.event == 'pull_request'
+          && contains(github.event.workflow_run.pull_requests[0].labels.*.name, 'run-b')
+      ) || (
+        github.event_name == 'pull_request_target'
+          && github.event.label.name == 'run-b'
+          && github.event.action == 'labeled'
       )
 
     runs-on: ubuntu-latest
     steps:
-      - run: echo 'hi'
+      - name: Check Previous Workflow Test A Status
+        if: github.event_name == 'pull_request_target'
+        id: check_previous_run
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const prNumber = github.event.pull_request.number;
+            const repo = github.context.repo;
+            const runs = await github.actions.listWorkflowRunsForRepo({
+              owner: repo.owner,
+              repo: repo.repo,
+              branch: github.head_ref,
+              event: 'pull_request'
+            });
+            const workflowARuns = runs.data.workflow_runs.filter(run => run.name === 'Workflow A' && run.pull_requests.some(pr => pr.number === prNumber));
+            const latestRun = workflowARuns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            if (latestRun && latestRun.conclusion === 'success') {
+              return true;
+            }
+            return false;
+
+      - name: Run B
+        if: >
+          (
+            github.event_name == 'workflow_run'
+              && github.event.workflow_run.conclusion == 'success'
+              && contains(github.event.workflow_run.pull_requests[0].labels.*.name, 'run-b')
+          ) || (
+            github.event_name == 'pull_request_target'
+              && steps.check_previous_run.outputs.result == 'true'
+          )
+        run: echo 'hi'
